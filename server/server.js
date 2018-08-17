@@ -1,28 +1,39 @@
 const express = require('express')
 const path = require('path')
 const http = require('http');
-//make sure you keep this order
+const socketIO = require('socket.io')
+
+const { generateMessage } = require('./utils/message')
+const publicPath = path.join(__dirname, '../public')
+var port = process.env.PORT || 3033
 var app = express();
 var server = http.createServer(app);
-var io = require('socket.io').listen(server);
-
-var port = process.env.PORT || 3000
-
-const publicPath = path.join(__dirname, '../public')
+var io = socketIO(server)  
 
 app.use(express.static(publicPath))
 
-server.listen(port, () => {
-    console.log('listening on port  ' + port)
-});
-
 io.on('connection', (socket) => {
-    console.log('new ueser connected')
+    console.log('new user connected')
+
+    socket.emit('newMessage', generateMessage('Admin', 'Welcome to the chat app'))
+
+    socket.broadcast.emit('newMessage', generateMessage('Admin', 'New user joined'))
+
+    socket.on('createMessage', (message, callback) => {
+        console.log('createMessage : ', message)
+        io.emit('newMessage', generateMessage(message.from, message.text))
+        callback('This is from the server.');
+    })
+
     socket.on('disconnect', () => {
         console.log('User was disconnected')
-
     })
 })
+
+server.listen(port, () => {
+    console.log(`Server is up on ${port}`);
+})
+
 
 
 // const express = require('express') 
@@ -41,13 +52,9 @@ io.on('connection', (socket) => {
 
 // app.use(express.static(publicPath))
 
-
-
-
-
-
-
 // console.log(__dirname + '/../public')
 // console.log(publicPath)
-
+// server.listen(port, () => {
+//     console.log('listening on port  ' + port)
+// });
 
